@@ -118,17 +118,17 @@ class OpInfoBase(object):
     def set_time(self, time):
         # ms
         self._time_ += time
-    
+
     def get_name(self):
         return self._name_
 
     def get_time(self):
         # ms
         return self._time_
-    
+
     def get_module_name(self):
         return self.module_name
-    
+
 # record AtenOp info
 class AtenOp(OpInfoBase):
     def __init__(self, name="", m_name="", time=0) -> None:
@@ -141,10 +141,10 @@ class DistOp(OpInfoBase):
         self._bytes_ = d_bytes
     def set_bytes(self, bts):
         self._bytes_ = bts
-    
+
     def get_bytes(self):
         return self._bytes_
-    
+
     def get_bw(self):
         # GB/s
         if self._time_ == 0:
@@ -190,10 +190,10 @@ class DistOpSummary(OpSummary):
     def __init__(self, time, bytes) -> None:
         super().__init__(time)
         self.total_bytes = bytes
-    
+
     def add_bytes(self, byt):
         self.total_bytes += byt
-    
+
     def get_total_bytes(self):
         return self.total_bytes
 
@@ -385,16 +385,16 @@ class AtenOpAnalyzer(Analyzer):
                 return False
             else:
                 self.collection_state = STATE.OP
-            self.current_op_name = line.rstrip("\n").split(":")[-1].replace("_", " ")
+            self.current_op_name = line.rstrip("\n").split(":")[-1]
             self.current_op = AtenOp(self.current_op_name, self.current_m_name)
             return True
         elif (self.collection_state == STATE.FORMAL or self.collection_state == STATE.MODULE) and "[DIST START_SYMBOL]" in line:
             if "[DIST START_SYMBOL]" in line:
                 self.collection_state = STATE.DISTOP
-            self.current_op_name = line.rstrip("\n").split(":")[-1].replace("_", " ")
+            self.current_op_name = line.rstrip("\n").split(":")[-1]
             self.current_op = AtenOp(self.current_op_name, self.current_m_name)
             return True
-        
+
         return False
 
     def identify_op_end(self, line: str):
@@ -451,7 +451,7 @@ class AtenOpAnalyzer(Analyzer):
                 continue
             else:
                 self.identify_op_time(line)
- 
+
     def gen_detail_table(self):
         """
         Function:
@@ -512,23 +512,27 @@ class AtenOpAnalyzer(Analyzer):
                 "Op",
                 "Max Time(ms)",
                 "Min Time(ms)",
-                "Avg Time(ms)",
+                # "Avg Time(ms)",
                 "Total Time(ms)",
                 "Count",
-                "Percent(%)",
+                "Percent",
+                "ACC Percent",
             ]
         )
+        acc_percent = 0
         for op in op_list:
             percent = op[1].get_total_time() / self.get_total()
+            acc_percent += percent
             table.add_row(
                 [
-                    fill(op[0], width=40),
-                    op[1].get_max(),
-                    op[1].get_min(),
-                    op[1].get_avg(),
-                    op[1].get_total_time(),
-                    op[1].get_call_count(),
-                    percent,
+                    op[0],
+                    f"{op[1].get_max():.6f}",
+                    f"{op[1].get_min():.6f}",
+                    # f"{op[1].get_avg():.6f}",
+                    f"{op[1].get_total_time():.6f}",
+                    f"{op[1].get_call_count()}",
+                    f"{percent:.6f}",
+                    f"{acc_percent:.4f}"
                 ]
             )
         table.align = "l"
@@ -554,7 +558,7 @@ class DistAnalyzer(Analyzer):
         ) and "[DIST START_SYMBOL]" in line:
             Logger.debug("DIST Op Start")
             self.collection_state = STATE.DISTOP
-            self.current_op_name = line.rstrip("\n").split(":")[-1].replace("_", " ")
+            self.current_op_name = line.rstrip("\n").split(":")[-1]
             self.current_op = DistOp(self.current_op_name, self.current_m_name)
             return True
         return False
@@ -645,7 +649,7 @@ class DistAnalyzer(Analyzer):
         table.set_style(pt.DEFAULT)
         table.align = "l"
         return table
-    
+
     def gen_summary_table(self):
         final_list = self.get_op_list()
         op_dict = {}
@@ -675,7 +679,7 @@ class DistAnalyzer(Analyzer):
             ]
         )
         for op in op_list:
-            percent = op[1].get_avg_bw() / 20 
+            percent = op[1].get_avg_bw() / 20
             table.add_row(
                 [
                     fill(op[0], width=40),
@@ -687,8 +691,8 @@ class DistAnalyzer(Analyzer):
             )
         table.align = "l"
         return table
-        
- 
+
+
 def count_module(op_or_moudle: list):
     counter = 0
     for elem in op_or_moudle:
@@ -851,7 +855,7 @@ def compare(analyzer1, analyzer2):
 def same_table(lhs, rhs):
     lhs_rows = len(lhs._rows)
     lhs_columns = len(lhs.field_names)
-    
+
     rhs_rows = len(rhs._rows)
     rhs_columns = len(rhs.field_names)
 
@@ -880,7 +884,7 @@ def cal_error(table):
     lhs = table._rows[num_rows - 1][2]
     rhs = table._rows[num_rows - 1][4]
     return float(rhs) - float(lhs)
-    
+
 
 def add_column(table, column_name, content):
     num_rows = len(table._rows)
@@ -916,18 +920,18 @@ def gen_module_compare_tables(analyzer1, analyzer2):
                 count_list[index] += 1
                 error_list[index] += error
                 break
-        
+
         if not find_flag:
             count_list.append(1)
             error_list.append(error)
             non_duplicate_table_list.append(table)
-                
+
     for index in range(len(non_duplicate_table_list)):
         add_column(non_duplicate_table_list[index], "count", count_list[index])
         add_column(non_duplicate_table_list[index], "Total Error(ms)", error_list[index])
-    
+
     non_duplicate_table_list = sorted(non_duplicate_table_list, key=sort_func, reverse=True)
-    return non_duplicate_table_list 
+    return non_duplicate_table_list
 
 
 def gen_module_compare_table_str(analyzer1, analyzer2):

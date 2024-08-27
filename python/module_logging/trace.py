@@ -49,7 +49,7 @@ def singleton(cls):
             _instance[cls] = cls()
         return _instance[cls]
     return inner
-        
+
 def mock_all_reduce(tensor, op=ReduceOp.SUM, group=None, async_op=False):
     # print("[DIST START_SYMBOL]: torch.distributed.all_reduce", flush=True)
     Hook.record_time("B", "torch.distributed.all_reduce", "aten op")
@@ -120,7 +120,7 @@ def mock_send(tensor: torch.Tensor, dst: int, group: Optional[ProcessGroup] = No
     ret = origin_send(tensor, dst, group, tag)
     # print("[DIST END_SYMBOL]: torch.distributed.send", flush=True)
     Hook.record_time("E", "torch.distributed.send", "aten op")
-    return ret 
+    return ret
 
 def mock_recv(tensor: torch.Tensor, src: Optional[int] = None, group: Optional[ProcessGroup] = None, tag: int = 0) -> None:
     # print("[DIST START_SYMBOL]: torch.distributed.recv", flush=True)
@@ -171,9 +171,9 @@ class DistOpRecordMonkeyPatch(object):
         '''
         recover the original function
         '''
-        torch.distributed.all_reduce = origin_all_reduce 
-        torch.distributed.broadcast = origin_broadcast 
-        torch.distributed.barrier = origin_barrier 
+        torch.distributed.all_reduce = origin_all_reduce
+        torch.distributed.broadcast = origin_broadcast
+        torch.distributed.barrier = origin_barrier
         torch.distributed._all_gather_base = origin__all_gather_base
         torch.distributed._reduce_scatter_base = origin__reduce_scatter_base
         torch.distributed.all_gather = origin_all_gather
@@ -207,11 +207,11 @@ class Tracer(TorchDispatchMode):
         '''
         model: nn.Module or nn.Module list to be traced
         path: path to save profiling data
-        profling_bw: whether to profile backward pass, for some specific case, profiling backward pass 
+        profling_bw: whether to profile backward pass, for some specific case, profiling backward pass
                      will lead to following error: RuntimeError:
                      "Output 0 of BackwardHookFunctionBackward is a view and is being modified inplace.
-                     This view was created inside a custom Function (or because an input was returned as-is) 
-                     and the autograd logic to handle view+inplace would override the custom backward associated with the custom Function, leading to incorrect gradients. This behavior is forbidden. 
+                     This view was created inside a custom Function (or because an input was returned as-is)
+                     and the autograd logic to handle view+inplace would override the custom backward associated with the custom Function, leading to incorrect gradients. This behavior is forbidden.
                      You can fix this by cloning the output of the custom Function."
         print_module_info: whether to print module info: e.g. BEGIN FORWARD: {}_froward, END FORWARD: {}_froward, BEGIN BACKWARD: {}_backward, END BACKWARD: {}_backward
         '''
@@ -230,7 +230,7 @@ class Tracer(TorchDispatchMode):
         if self.print_module_info:
             Hook.enable_recorder()
             log_path = "/tmp/logs/{}.log".format(rank)
-            Hook.set_log_record_path(log_path) 
+            Hook.set_log_record_path(log_path)
 
         # enable timer recording
         Hook.enable_profiling()
@@ -240,7 +240,7 @@ class Tracer(TorchDispatchMode):
             Hook.set_timer_record_path("/tmp/profiling.json")
         else:
             Hook.set_timer_record_path(path)
-        
+
         if model is None:
             return
         else:
@@ -265,7 +265,7 @@ class Tracer(TorchDispatchMode):
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.monkey_patch.recover()
-        for k in self.TENSOR_FUNCS_NO_DISPATCH:
+        for k in TENSOR_FUNCS_NO_DISPATCH:
             setattr(torch.Tensor, k, self._pt_impls[k])
         super().__exit__(exc_type, exc_value, traceback)
         Hook.write_to_file()

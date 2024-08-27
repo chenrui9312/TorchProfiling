@@ -96,7 +96,7 @@ def cpp_extend_setup():
         author_email="https://github.com/wffpy/TorchProfiling",
         description="logging on moudle and aten op level",
         packages=find_packages(where="python"),
-        package_dir={"": os.path.join(script_dir, "python")},
+        package_dir={"": "python"},
         package_data={"": ["*"]},
         install_requires=[
             "prettytable",

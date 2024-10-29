@@ -22,6 +22,10 @@ bash scripts/build.sh
 
 ### 1. Get Profiling Data
 #### step 1: Profiling
+##### Env
+```
+export ENABLE_PROFILING=True
+```
 
 ##### Mode 1: just profiling the aten op 
 ```
@@ -29,17 +33,28 @@ import module_logging as ml
 
 with ml.combined_context():
     model()
-
 ```
 
 ##### Mode 2: profiling both the nn.Module and aten op
 ```
+m = model()
 import module_logging as ml
 
 m = model
-with ml.combined_context(m):
+with ml.logger.PerformanceLogger(m):
     m()
+```
 
+```
+from  module_logging import logger.PerformanceLogger as PL
+pl = PL()
+m = model()
+pl.config(model=m)
+
+pl.__enter__()
+for i in range(100):
+    m()
+pl.__exit__()
 ```
 
 #### step 2: Post-Processing
@@ -76,8 +91,11 @@ python -m module_logging --percision --lhs_path 0.h5f --rhs_path 1.h5f
 
 ### 2. 统计C函数调用次数
 ```
+export ENABLE_HOOK_TRACE=true
+
 import module_logging
 module_logging.Hook.install_hook()
+
 
 python test.py
 ```
@@ -85,6 +103,7 @@ python test.py
 
 ### 3. 打印C函数的调用栈
 ```
+export ENABLE_HOOK_TRACE=true
 export PRINT_BACKTRACE=true
 
 import module_logging
@@ -186,7 +205,36 @@ with persion_debugger:
 python -m module_logging --percision --lhs_path 0.h5f --rhs_path 1.h5f
 ```
 
+### 6. Tensor Tracing
+In training, due to some kernel implementation error, some kernel may write data over range. This action is Secretive and diffcult to debug. There is neccesary to trace the Tensor and record the action which modified the inner data.
 
-### C Function Counter
-TODO:
-use a different hook function which will try to modify the hooked function's assembly code.
+#### Usage
+##### Example
+```
+from  module_logging import tensor_tracer
+tensor1 = torch.tensor([1, 2, 3], device='cpu').float()
+tensor2 = torch.tensor([4, 5, 6], device='cpu').float()
+tensor_tracer.__enter__()
+
+# begin to trace the tensor
+tensor_tracer.trace("tensor1", tensor1)
+
+# tensor1 will be modified in add
+tensor1.add_(tensor2)
+
+tensor_tracer.__exit__()
+
+```
+
+##### Result
+```
+[aten op name]: aten.add_.Tensor
+|  Tensor  | Status |  Max  |  Min  | Mean | Std  |
+|----------|--------|-------|-------|------|------|
+| tensor1  |  old   |  3.0  |  1.0  |  2.0 |  1.0 |
+| tensor1  |  new   |  9.0  |  5.0  |  7.0 |  2.0 |
+``````
+
+#### Disadvantage
+The traced tensor will not be released until the end of program.
+

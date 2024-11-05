@@ -240,6 +240,7 @@ class Analyzer:
         self.stack = ModuleStack()
         self.op_or_module = []
         self.total = 0
+        self._strict = False
 
     # def identify_step_beign_or_end(self, line: str):
     #     """
@@ -257,6 +258,9 @@ class Analyzer:
     #             self.collection_state = STATE.STOP
     #         return True
     #     return False
+
+    def strict(self, flag: bool=True):
+        self._strict = flag
 
     def identify_module_begin(self, line: str):
         """
@@ -432,13 +436,15 @@ class AtenOpAnalyzer(Analyzer):
     def identify_op_time(self, line: str):
         Logger.debug(line)
         # not get the time of dist op
-        if self.collection_state == STATE.OP and "[XPURT_PROF]" in line:
+        if not "[XPURT_PROF]" in line:
+            return False
+        if self.collection_state == STATE.OP:
             Logger.debug("Op Time")
             if self.current_op:
                 self.current_op.set_time(float(line.split(" ")[-2]) / 1000000)
             return True
-        elif (self.collection_state == STATE.MODULE or self.collection_state == STATE.FORMAL) and  "[XPURT_PROF]" in line:
-            if self.current_op is None:
+        elif (self.collection_state == STATE.MODULE or self.collection_state == STATE.FORMAL):
+            if self.current_op is None and self._strict == False:
                 Logger.debug("Op Time")
                 Logger.debug(line)
                 extention_op_time = float(line.split(" ")[-2]) / 1000000

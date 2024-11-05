@@ -42,6 +42,10 @@ def parse_args():
     )
 
     arg_parser.add_argument(
+        "--strict", action="store_true", help="just catpure torch op"
+    )
+
+    arg_parser.add_argument(
         "--summary", action="store_true", help="generate summary table"
     )
 
@@ -132,6 +136,8 @@ def parse_log():
         
     elif not args.compare:
         analyzer = AtenOpAnalyzer(args.path)
+        if args.strict:
+            analyzer.strict()
         analyzer.analysis()
         if args.all:
             s_table = analyzer.gen_summary_table()

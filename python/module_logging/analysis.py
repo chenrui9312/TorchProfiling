@@ -277,7 +277,7 @@ class Analyzer:
         ):
             # if self.current_module is not None:
             #     self.stack.push(self.current_module)
-            self.current_m_name = line.rstrip("\n").split(":")[-1]
+            self.current_m_name = line.rstrip("\n").split(":")[-1].strip()
             self.current_module = LocalModule(self.current_m_name)
             self.collection_state = STATE.MODULE
             Logger.debug("Module Begin: {}".format(self.current_m_name))
@@ -390,13 +390,13 @@ class AtenOpAnalyzer(Analyzer):
                 return False
             else:
                 self.collection_state = STATE.OP
-            self.current_op_name = line.rstrip("\n").split(":")[-1]
+            self.current_op_name = line.rstrip("\n").split(":")[-1].strip()
             self.current_op = AtenOp(self.current_op_name, self.current_m_name)
             return True
         elif (self.collection_state == STATE.FORMAL or self.collection_state == STATE.MODULE) and "[DIST START_SYMBOL]" in line:
             if "[DIST START_SYMBOL]" in line:
                 self.collection_state = STATE.DISTOP
-            self.current_op_name = line.rstrip("\n").split(":")[-1]
+            self.current_op_name = line.rstrip("\n").split(":")[-1].strip()
             self.current_op = AtenOp(self.current_op_name, self.current_m_name)
             return True
 
@@ -556,6 +556,18 @@ class AtenOpAnalyzer(Analyzer):
         table.align = "l"
         return table
 
+    def gen_ops_list(self):
+        """
+        """
+        final_list = self.get_op_list()
+        simple_list = []
+
+        for elem in final_list:
+            k = elem.get_name()
+            v = elem.get_time()
+            simple_list.append((k, v))
+        return simple_list
+
 class DistAnalyzer(Analyzer):
     def __init__(self, path):
         super().__init__(path)
@@ -576,7 +588,7 @@ class DistAnalyzer(Analyzer):
         ) and "[DIST START_SYMBOL]" in line:
             Logger.debug("DIST Op Start")
             self.collection_state = STATE.DISTOP
-            self.current_op_name = line.rstrip("\n").split(":")[-1]
+            self.current_op_name = line.rstrip("\n").split(":")[-1].strip()
             self.current_op = DistOp(self.current_op_name, self.current_m_name)
             return True
         return False

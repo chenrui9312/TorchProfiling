@@ -38,6 +38,10 @@ def parse_args():
     )
 
     arg_parser.add_argument(
+        "--list", action="store_true", help="generate list"
+    )
+
+    arg_parser.add_argument(
         "--summary", action="store_true", help="generate summary table"
     )
 
@@ -140,6 +144,10 @@ def parse_log():
             if args.total:
                 t_table = analyzer.gen_total_time_table()
                 write_table(t_table, "total", args.csv)
+            if args.list:
+                s_list = analyzer.gen_ops_list()
+                for row in s_list:
+                    print(f"{row[0]}\t{row[1]}")
             if args.summary:
                 s_table = analyzer.gen_summary_table()
                 write_table(s_table, "summary", args.csv)

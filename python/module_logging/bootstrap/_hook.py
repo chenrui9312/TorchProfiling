@@ -20,7 +20,7 @@ class MetaPathLoader:
         # ``sys.modules`` 中保存的是已经导入过的 module
         if fullname in sys.modules:
             return sys.modules[fullname]
-        print("not already imported")
+        print("not already imported", file=sys.stderr)
 
         # 先从 sys.meta_path 中删除自定义的 finder
         # 防止下面执行 import_module 的时候再次触发此 finder
@@ -41,7 +41,7 @@ sys.meta_path.insert(0, MetaPathFinder())
 def module_hook(fullname, module):
     # print(f"fullname {fullname}")
     # print(f"module {module}")
-    print("Hook Distributed Ops")
+    print("Hook Distributed Ops", file=sys.stderr)
     if fullname == "torch":
         # module.autograd.backward = func_wrapper(module.autograd.backward)
 
